@@ -1,0 +1,12 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+.neptune
+*temp_model.pth
+data/
+training_history.pkl
+all_structure_graphviz.dot
+all_structure.txt
+all_structure_graphviz.dot.pdf

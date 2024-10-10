@@ -1,0 +1,28 @@
+services:
+  mcts_batch_optimization_cv:
+    image: mcts_batch_optimization_cv
+    tty: true
+    stdin_open: true
+    environment:
+      - QT_X11_NO_MITSHM=1
+      - HOST_USER=$USER
+      - NVIDIA_VISIBLE_DEVICES=all
+    container_name: mcts_batch_optimization_cv
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    ports:
+      - "2222:22"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.docker/config.json:/config.json
+    command: --interval 30 --cleanup --label-enable
+    restart: always
