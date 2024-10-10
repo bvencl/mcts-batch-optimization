@@ -1,11 +1,10 @@
 FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
-LABEL maintainer="pelenczei.balint@sztaki.hun-ren.hu"
-LABEL docker_image_name="MCTS Batch Optimization in Computer Vision"
-LABEL description="This container is created to train and evaluate MCTS batch sequence optimized Computer Vision models"
+LABEL maintainer="bodi.vencel04@gmail.com"
+LABEL docker_image_name="MCTS-based Batch Order Optimization"
 LABEL com.centurylinklabs.watchtower.enable="true"
 
-WORKDIR /mcts_batch_optimization_cv
+WORKDIR /mcts_batch_optimization
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq && \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -qy \
@@ -39,8 +38,8 @@ COPY . .
 RUN pip3 install -r requirements.txt
 
 ENV PYTHONPATH "${PYTHONPATH}:/"
-ENV PYTHONPATH "${PYTHONPATH}:/mcts_batch_optimization_cv/"
+ENV PYTHONPATH "${PYTHONPATH}:/mcts_batch_optimization/"
 
-RUN echo "cd /mcts_batch_optimization_cv" >> /root/.bashrc
+RUN echo "cd /mcts_batch_optimization" >> /root/.bashrc
 
 CMD ["/usr/sbin/sshd", "-D"]

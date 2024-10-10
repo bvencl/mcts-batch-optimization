@@ -1,13 +1,13 @@
 services:
   mcts_batch_optimization_cv:
-    image: mcts_batch_optimization_cv
+    image: mcts_batch_optimization
     tty: true
     stdin_open: true
     environment:
       - QT_X11_NO_MITSHM=1
       - HOST_USER=$USER
       - NVIDIA_VISIBLE_DEVICES=all
-    container_name: mcts_batch_optimization_cv
+    container_name: mcts_batch_optimization
     deploy:
       resources:
         reservations:
