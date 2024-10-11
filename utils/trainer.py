@@ -163,7 +163,6 @@ class Trainer:
                 
                 save_tree(self.mcts.root, 'all')
                 shutil.rmtree('nodes/')
-                set_seeds(seed=(epoch+1))
         
         except KeyboardInterrupt:
             print("Interrupted the training, shutting down...") 
