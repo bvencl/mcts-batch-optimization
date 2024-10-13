@@ -142,20 +142,22 @@ class Trainer:
                     self.neptune_namespace["metrics/val_acc"].append(0.0)
                     self.neptune_namespace["metrics/val_loss"].append(0.0)
         try:
-            for epoch in range(self.n_epochs):     
+            for epoch in range(self.n_epochs):
+                print(f'Setting learning rate to {self.lr_scheduler.get_lr()[0]}!')
                 _ = self.mcts.search(self.model, self.val_loader, self.criterion, self.optimizer, self.sampler, self.checkpoint, neptune_namespace = self.neptune_namespace, visualise=False)
                 # ! Itt nem feltétlenül a checkpointot kellene betölteni
                 self.model.load_state_dict(torch.load(self.config.paths.model_checkpoint_path + "checkpoint.pth", weights_only=True))               
                 val_loss, val_acc = validate_model(model=self.model, data_loader=self.val_loader, criterion=self.criterion)
                 
                 if self.neptune_logger:
-                    self.neptune_namespace["metrics/val_acc"].append(copy.deepcopy(val_acc / 100.0))
+                    self.neptune_namespace["metrics/val_acc"].append(copy.deepcopy(val_acc))
                     self.neptune_namespace["metrics/val_loss"].append(val_loss)
                 
                 if  self.neptune_logger:
                     self.neptune_namespace["metrics/lr"].append(self.lr_scheduler.get_lr()[0])
                 if self.config.agent.lr_decay:
                     self.lr_scheduler.step()
+                    
                 
                 print(
                     f"Epoch {epoch + 1}/{self.n_epochs} - Val loss: {val_loss:.4f},"

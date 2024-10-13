@@ -58,7 +58,7 @@ class Node:
 
     def backpropagate(self, score):
         self._visits += 1
-        self._value += score
+        self._value += score * 5
         if self.parent:
             self.parent.backpropagate(score)
 
