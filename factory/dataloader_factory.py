@@ -32,7 +32,7 @@ class DataLoaderFactory(BaseFactory):
             pin_memory=True if device != "" else False,
             pin_memory_device=device,
         )
-
+        print(f'Number of training batches: {len(train_loader)}')
         val_loader = DataLoader(
             dataset=val_dataset,
             batch_size=config.batch_size_validate,

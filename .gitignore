@@ -5,6 +5,7 @@ __pycache__/
 
 .neptune
 *temp_model.pth
+**/*.pth
 data/
 training_history.pkl
 all_structure_graphviz.dot

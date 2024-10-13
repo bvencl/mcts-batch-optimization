@@ -31,7 +31,7 @@ class CallbackFactory:
                 os.remove(path + "checkpoint.pth")
                 loaded_checkpoint = False
             elif loaded_checkpoint:
-                kwargs["model"].load_state_dict(torch.load(path + "checkpoint.pth"), weights_only=True)
+                kwargs["model"].load_state_dict(torch.load(path + "checkpoint.pth"))
                 val_loss, val_acc = validate_model(
                     kwargs["model"], kwargs["val_loader"], kwargs["criterion"]
                 )
@@ -49,7 +49,7 @@ class CallbackFactory:
             my_callbacks["model_checkpoint"] = checkpoint
             if verbose and loaded_checkpoint:
                 print(
-                    f"Model loaded to model checkpoint with {val_acc} validation accuracy and {val_loss} validation loss!"
+                    f"Model loaded to model checkpoint with {val_acc} validation accuracy and {val_loss} validation loss"
                 )
 
         return my_callbacks

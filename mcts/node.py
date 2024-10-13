@@ -58,7 +58,7 @@ class Node:
 
     def backpropagate(self, score):
         self._visits += 1
-        self._value += score * 5
+        self._value += score * 10
         if self.parent:
             self.parent.backpropagate(score)
 
@@ -92,7 +92,7 @@ class Node:
             ].print_best_child_by_mean_accuracy()
         else:
             best_acc = self.core_acc
-            print("Best mean accuracy: {:.4}".format(best_acc * 100))
+            print("Best mean accuracy: {:.4} in layer {}".format(best_acc * 100, self.epoch))
 
     def print_best_child_by_val_accuracy(self):
         max = []
@@ -106,4 +106,4 @@ class Node:
             ].print_best_child_by_val_accuracy()
         else:
             best_acc = self.core_acc
-            print("Best validation accuracy: {:.4}".format(best_acc * 100))
+            print("Best validation accuracy: {:.4} in layer {}".format(best_acc * 100, self.epoch))

@@ -122,7 +122,7 @@ def load_mnist(config, data_dir):
         mnist_data["val_labels"] = val_labels[:num_data_samples_val]
         mnist_data["test_data"] = test_data[:num_data_samples_test]
         mnist_data["test_labels"] = test_labels[:num_data_samples_test]
-        print(f"Number of mcts training labels: {len(train_labels)}")
+        print(f"Number of mcts training labels: {len(mnist_data['train_labels'])}")
     else:
         mnist_data["train_data"] = train_data[:num_data_samples_train]
         mnist_data["train_labels"] = train_labels[:num_data_samples_train]
@@ -130,7 +130,7 @@ def load_mnist(config, data_dir):
         mnist_data["val_labels"] = val_labels[:num_data_samples_val]
         mnist_data["test_data"] = test_data[:num_data_samples_test]
         mnist_data["test_labels"] = test_labels[:num_data_samples_test]
-        print(f"Number of training labels: {len(train_labels)}")
+        print(f"Number of training labels: {len(mnist_data['train_labels'])}")
 
     mnist_data["train_transforms"] = train_transforms
     mnist_data["val_transforms"] = val_transforms
