@@ -30,7 +30,7 @@ class ModelFactory(BaseFactory):
             my_model.features[0][0] = torch.nn.Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1),
                                                       bias=False)  # Adjusting the output layer
             my_model.classifier[3] = nn.Linear(my_model.classifier[3].in_features, num_classes)
-
+            
         elif model == "mobilenet_v3_small":
             my_model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT if pretrained else None)
 
@@ -56,6 +56,16 @@ class ModelFactory(BaseFactory):
             raise NotImplementedError(
                 "Valid options: mobilenet_v3_large, mobilenet_v3_small, resnet50")
 
+        if kwargs["config"].trainer.dropout_off:
+            cls.disable_dropout(my_model)
+            print("Dropout is off")
+
         my_model.to(device)
 
         return my_model
+
+    @staticmethod
+    def disable_dropout(model):
+        for module in model.modules():
+            if isinstance(module, nn.Dropout):
+                module.p = 0

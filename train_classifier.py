@@ -29,7 +29,7 @@ def main():
     my_callbacks = CallbackFactory.create(
         config=config,
         model=my_model,
-        val_loader=(val_loader),
+        val_loader=val_loader,
         criterion=my_criterion,
     )
 

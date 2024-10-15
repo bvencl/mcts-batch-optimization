@@ -10,6 +10,8 @@ class CustomNeptuneLogger(NeptuneLogger):
 
     def start_logging(self, model):
         parameters = {
+            "number_of_epochs": self._config.trainer.n_epochs,
+            "dropout_off": self._config.trainer.dropout_off,
             "train_data_size": self._config.data_loader.num_data_samples_train,
             "mcts_data_size": self._config.data_loader.num_data_samples_mcts,
             "val_and_test_data_size": self._config.data_loader.num_data_samples_val_test,

@@ -44,7 +44,7 @@ class MCTS:
 
             v.backpropagate(val_acc)
 
-            self.root.print_best_child_by_val_accuracy()
+            self.root.print_best_child_by_mean_accuracy()
             save_tree(self.root, 'all')
 
         return self.root
@@ -55,7 +55,9 @@ class MCTS:
         
         if self.config.paths.load_model:
             self._base_model.load_state_dict(torch.load(self.config.paths.load_model, weights_only=True)) 
-                     
+            val_loss, val_acc = validate_model(model=self._base_model, data_loader=val_loader, criterion=criterion)
+            print("_init_search:\nVal loss: {:.4f}, Val accuracy: {:.2f}%".format(val_loss, val_acc * 100.))
+            
         elif os.path.exists(self.config.paths.model_checkpoint_path + "checkpoint.pth"):
             self._base_model.load_state_dict(torch.load(self.config.paths.model_checkpoint_path + "checkpoint.pth", weights_only=True))
             val_loss, val_acc = validate_model(model=self._base_model, data_loader=val_loader, criterion=criterion)
@@ -128,6 +130,7 @@ class MCTS:
     def best_branch(self, node):
         best = deepcopy(node)
         batch_idxs = []
+        last_node = best
 
         def _best_branch(node):
             if len(node.children) == 0:
@@ -136,12 +139,13 @@ class MCTS:
             best_child = node.best_child(self.c_param)
             node.children = [best_child]
             batch_idxs.append(best_child.batch_idx)
+            last_node = best_child
 
             return _best_branch(best_child)
 
         _best_branch(best)
 
-        return best, batch_idxs
+        return best, batch_idxs, last_node
 
     def best_branch_visualisation(self, node):
 

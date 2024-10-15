@@ -45,7 +45,7 @@ class AgentFactory(BaseFactory):
             elif decay_strategy == "lin":
                 lr_scheduler = optim.lr_scheduler.LinearLR(optimizer=optimizer)
             elif decay_strategy == "exp":
-                lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.99)
+                lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=config.agent.exp_gamma)
             else:
                 raise ValueError("Invalid learning rate scheduler "
                                  "('cos' or 'warmup_cos' or 'lin' or 'exp')")

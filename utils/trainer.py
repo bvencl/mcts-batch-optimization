@@ -26,6 +26,7 @@ class Trainer:
         
         self.sampler = sampler
         self.mcts = mcts
+        train_mcts = self.train_mcts if self.checkpoint else self.train_mcts_original
         self.train = self.train_classic if self.sampler is None else self.train_mcts
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -52,6 +53,10 @@ class Trainer:
         for epoch in range(self.n_epochs) if batch_sequence_idxs is None else [0]:
             self.model.train()
             running_loss, correct_train = 0.0, 0
+            if self.lr_scheduler is not None:
+                print(f'Setting learning rate to {self.lr_scheduler.get_lr()[-1]}')
+            else:
+                print(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")
             train_loader_iter = iter(self.train_loader) if batch_sequence_idxs is None else None
             length = min(len(self.train_loader), len(batch_sequence_idxs)) if batch_sequence_idxs is not None else len(self.train_loader)
             for i in range(length):
@@ -114,10 +119,12 @@ class Trainer:
             if self.model_checkpoint:
                 self.checkpoint(val_loss[-1], val_accuracy[-1]/100.0, self.model, self.neptune_namespace)
 
-            if self.neptune_logger:
+            if self.neptune_logger and self.config.agent.lr_decay:
                 self.neptune_namespace["metrics/lr"].append(float(self.lr_scheduler.get_lr()[-1]))
                 self.lr_scheduler.step()
-
+            elif self.neptune_logger:
+                self.neptune_namespace["metrics/lr"].append(self.optimizer.param_groups[0]['lr'])
+                
 
         history = {
             'train_loss': train_loss,
@@ -143,7 +150,10 @@ class Trainer:
                     self.neptune_namespace["metrics/val_loss"].append(0.0)
         try:
             for epoch in range(self.n_epochs):
-                print(f'Setting learning rate to {self.lr_scheduler.get_last_lr()}')
+                if self.config.agent.lr_decay:
+                    print(f'Setting learning rate to {self.lr_scheduler.get_lr()[-1]}')
+                else:
+                    print(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")                    
                 _ = self.mcts.search(self.model, self.val_loader, self.criterion, self.optimizer, self.sampler, self.checkpoint, neptune_namespace = self.neptune_namespace, visualise=False)
                 # ! Itt nem feltétlenül a checkpointot kellene betölteni
                 self.model.load_state_dict(torch.load(self.config.paths.model_checkpoint_path + "checkpoint.pth", weights_only=True))               
@@ -152,12 +162,11 @@ class Trainer:
                 if self.neptune_logger:
                     self.neptune_namespace["metrics/val_acc"].append(copy.deepcopy(val_acc))
                     self.neptune_namespace["metrics/val_loss"].append(val_loss)
-                
-                if  self.neptune_logger:
-                    self.neptune_namespace["metrics/lr"].append(self.lr_scheduler.get_last_lr())
-                if self.config.agent.lr_decay:
-                    self.lr_scheduler.step()
-                    
+                    if self.config.agent.lr_decay:
+                        self.neptune_namespace["metrics/lr"].append(self.optimizer.param_groups[0]['lr'])
+                        self.lr_scheduler.step()
+                    else:
+                        self.neptune_namespace["metrics/lr"].append(float(self.lr_scheduler.get_lr()[-1]))                    
                 
                 print(
                     f"Epoch {epoch + 1}/{self.n_epochs} - Val loss: {val_loss:.4f},"
@@ -174,6 +183,46 @@ class Trainer:
             self.callbacks["neptune_logger"].stop()
             
 
+    def train_mcts_original(self):
+        if self.neptune_logger:
+                    self.neptune_namespace["metrics/val_acc"].append(0.0)
+                    self.neptune_namespace["metrics/val_loss"].append(0.0)
+        try:
+            for epoch in range(self.n_epochs):
+                if self.config.agent.lr_decay:
+                    print(f'Setting learning rate to {self.lr_scheduler.get_lr()[-1]}')
+                else:
+                    print(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")                    
+                root = self.mcts.search(self.model, self.val_loader, self.criterion, self.optimizer, self.sampler, self.checkpoint, neptune_namespace = self.neptune_namespace, visualise=False)
+                # ! Itt nem feltétlenül a checkpointot kellene betölteni
+                self.model.load_state_dict(torch.load(last_node.path, weights_only=True))               
+                _, batch_sequence_idxs, last_node = self.mcts.best_branch(root)
+                
+                val_loss, val_acc = validate_model(model=self.model, data_loader=self.val_loader, criterion=self.criterion)
+                if self.neptune_logger:
+                    self.neptune_namespace["metrics/val_acc"].append(copy.deepcopy(val_acc))
+                    self.neptune_namespace["metrics/val_loss"].append(val_loss)
+                    if self.config.agent.lr_decay:
+                        self.neptune_namespace["metrics/lr"].append(self.optimizer.param_groups[0]['lr'])
+                        self.lr_scheduler.step()
+                    else:
+                        self.neptune_namespace["metrics/lr"].append(float(self.lr_scheduler.get_lr()[-1]))                    
+                
+                print(
+                    f"Epoch {epoch + 1}/{self.n_epochs} - Val loss: {val_loss:.4f},"
+                    f"Val accuracy: {100 * val_acc:.2f}%")
+                
+                save_tree(self.mcts.root, 'all')
+                shutil.rmtree('nodes/')
+        
+        except KeyboardInterrupt:
+            print("Interrupted the training, shutting down...") 
+        torch.save(self.model.state_dict(), self.model_path + self.model_name + ".pth")
+        if self.neptune_logger:
+            self.callbacks["neptune_logger"].save_model(self.model_path + self.model_name + ".pth")
+            self.callbacks["neptune_logger"].stop()
+            
+            
 
     def get_batch(self, batch_sequence_idxs, i, train_loader_iter):
         if batch_sequence_idxs is not None:
