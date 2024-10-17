@@ -1,7 +1,7 @@
 import torch
 import torch.optim as optim
 
-from utils.agent_utils import WarmupCosineAnnealingLR
+from utils.agent_utils import *
 from factory.base_factory import BaseFactory
 from utils.agent_utils import FocalLoss
 
@@ -22,11 +22,11 @@ class AgentFactory(BaseFactory):
             raise NotImplementedError("Invalid loss type ('cross_entropy' or 'focal_loss')")
 
         if optimizer_name == "sgd":
-            optimizer = optim.SGD(model.parameters(), lr=config.agent.starting_learning_rate)
+            optimizer = optim.SGD(model.parameters(), lr=config.agent.lr_start)
         elif optimizer_name == "adam":
-            optimizer = optim.Adam(model.parameters(), lr=config.agent.starting_learning_rate)
+            optimizer = optim.Adam(model.parameters(), lr=config.agent.lr_start)
         elif optimizer_name == "rmsprop":
-            optimizer = optim.RMSprop(model.parameters(), lr=config.getfloat("agent", "starting_learning_rate"))
+            optimizer = optim.RMSprop(model.parameters(), lr=config.getfloat("agent", "lr_start"))
         else:
             raise NotImplementedError("Invalid optimizer type ('sgd' or 'adam' or 'rmsprop')")
 
@@ -34,18 +34,19 @@ class AgentFactory(BaseFactory):
             decay_strategy = config.agent.lr_decay_type
 
             if decay_strategy == "cos":
-                lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=config.trainer.n_epochs)
+                lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=config.trainer.n_epochs, verbose=config.agent.lr_verbose)
             elif decay_strategy == "warmup_cos":
                 T_max = config.trainer.n_epochs - config.agent.warmup_epochs
                 lr_scheduler = WarmupCosineAnnealingLR(optimizer=optimizer,
                                                        T_max=T_max,
                                                        warmup_epochs=config.agent.warmup_epochs,
-                                                       eta_min=config.agent.lr_min,
-                                                       eta_max=config.agent.warmup_lr_high)
+                                                       eta_min=config.agent.lr_end, # végén ide tart
+                                                       eta_max=config.agent.lr_warmup_end,
+                                                       verbose=config.agent.lr_verbose) # ide megy fel warmup végén
             elif decay_strategy == "lin":
-                lr_scheduler = optim.lr_scheduler.LinearLR(optimizer=optimizer)
+                lr_scheduler = optim.lr_scheduler.LinearLR(optimizer=optimizer, verbose=config.agent.lr_verbose)
             elif decay_strategy == "exp":
-                lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=config.agent.exp_gamma)
+                lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=config.agent.exp_gamma, verbose=config.agent.lr_verbose)
             else:
                 raise ValueError("Invalid learning rate scheduler "
                                  "('cos' or 'warmup_cos' or 'lin' or 'exp')")

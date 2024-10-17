@@ -23,6 +23,8 @@ def main():
         test_dataset=test_dataset,
     )
     my_model = ModelFactory.create(config=config)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    my_model.to(device)
     my_criterion, my_optimizer, lr_scheduler = AgentFactory.create(
         config=config, model=my_model
     )

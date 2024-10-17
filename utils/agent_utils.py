@@ -143,8 +143,9 @@ class WarmupCosineAnnealingLR(CosineAnnealingLR):
         if self.last_epoch <= self.warmup_epochs:
             warmup_stage = self.last_epoch / self.warmup_epochs
             lrs = [base_lr + (self.max_lr - base_lr) * warmup_stage for base_lr in self.base_lrs]
+
         else:
-            mid_stage = (self.last_epoch - self.warmup_epochs) / (self.T_max - self.warmup_epochs)
-            lrs = [self.eta_min + (self.max_lr - self.eta_min) * (1 + np.cos(np.pi * min(mid_stage, 1))) / 2 for base_lr in self.base_lrs]
+            mid_stage = (self.last_epoch - self.warmup_epochs) / self.T_max
+            lrs = [base_lr + (self.max_lr - base_lr) * (1 + np.cos(np.pi * mid_stage)) / 2 for base_lr in self.base_lrs]
 
         return lrs

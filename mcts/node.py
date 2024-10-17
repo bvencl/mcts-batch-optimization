@@ -56,11 +56,11 @@ class Node:
         os.makedirs(path, exist_ok=True)
         self.path = os.path.join(path, "temp_model.pth")
 
-    def backpropagate(self, score):
+    def backpropagate(self, score, score_multiplier):
         self._visits += 1
-        self._value += score * 10
+        self._value += score * score_multiplier
         if self.parent:
-            self.parent.backpropagate(score)
+            self.parent.backpropagate(score, score_multiplier)
 
     def best_child(self, c_value=1.41):
         exploit = []

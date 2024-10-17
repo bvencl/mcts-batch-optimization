@@ -14,7 +14,7 @@ class MCTS:
     def __init__(self, config):
         self.config = config
         self.branching_factor = self.config.mcts.branching_factor
-        self.n_iters = self.config.mcts.n_iters
+        self.n_iters = self.config.mcts.n_iters_max
         self.c_param = self.config.mcts.c_param
         self.checkpoint = None
 
@@ -26,9 +26,12 @@ class MCTS:
         elif self.config.mcts.branching_mode == 'factor':
             self.is_fully_expanded = self.is_fully_expanded_branching_factor
 
-    def search(self, model, val_loader, criterion, optimizer, sampler, model_checkpoint=None, neptune_namespace=None, visualise=False):
-        self._init_search(model, sampler, model_checkpoint, val_loader, criterion)
-
+    def search(self, model, val_loader, criterion, optimizer, sampler, epoch, model_checkpoint=None, neptune_namespace=None, visualise=False):
+        self._init_search(model, sampler, model_checkpoint, val_loader, criterion, epoch)
+        if self.config.mcts.increasing_exploit_multiplier:    
+            score_multiplier = self.config.mcts.min_exploit_multiplier if epoch <= self.config.mcts.exploit_multiplier_kick_in else min(self.config.mcts.exploit_multiplier_steps * epoch, self.config.mcts.max_exploit_multiplier)
+        else:
+            score_multiplier = self.config.mcts.default_exploit_multiplier
         for i in range(self.n_iters):
             print("Iteration #{0}".format(i))
 
@@ -36,32 +39,37 @@ class MCTS:
 
             val_loss , val_acc = self.rollout(v, sampler, val_loader, criterion, optimizer)
             
-            if self.is_terminal_node(v):
+            if self.config.mcts.checkpoint_loading:
+                self.checkpoint(val_loss=val_loss, val_acc=val_acc, model=self._base_model, neptune_namespace=neptune_namespace)
+            
+            if self.is_terminal_node(v) and self.checkpoint is not None:
                 self.checkpoint(val_loss, val_acc, self._base_model, neptune_namespace)
             
             if visualise:
                 self.best_branch_visualisation(self.root)
 
-            v.backpropagate(val_acc)
+            v.backpropagate(val_acc, score_multiplier=score_multiplier)
 
             self.root.print_best_child_by_mean_accuracy()
             save_tree(self.root, 'all')
 
         return self.root
 
-    def _init_search(self, model, sampler, model_checkpoint, val_loader, criterion):
+    def _init_search(self, model, sampler, model_checkpoint, val_loader, criterion, epoch):
         self._base_model = model
         self.checkpoint = model_checkpoint if model_checkpoint is not None else None
+        self.n_iters = min(self.config.mcts.n_iters_start + (250 * epoch), self.config.mcts.n_iters_max)
+        self._base_model.to(self.device)
         
         if self.config.paths.load_model:
-            self._base_model.load_state_dict(torch.load(self.config.paths.load_model, weights_only=True)) 
+            self._base_model.load_state_dict(torch.load(self.config.paths.load_model + ".pth", weights_only=True)) 
             val_loss, val_acc = validate_model(model=self._base_model, data_loader=val_loader, criterion=criterion)
-            print("_init_search:\nVal loss: {:.4f}, Val accuracy: {:.2f}%".format(val_loss, val_acc * 100.))
+            print("_init_search: Loaded a model with:\nVal loss: {:.4f}, Val accuracy: {:.2f}%".format(val_loss, val_acc * 100.))
             
-        elif os.path.exists(self.config.paths.model_checkpoint_path + "checkpoint.pth"):
+        elif os.path.exists(self.config.paths.model_checkpoint_path + "checkpoint.pth") and self.checkpoint is not None:
             self._base_model.load_state_dict(torch.load(self.config.paths.model_checkpoint_path + "checkpoint.pth", weights_only=True))
             val_loss, val_acc = validate_model(model=self._base_model, data_loader=val_loader, criterion=criterion)
-            print("_init_search:\nVal loss: {:.4f}, Val accuracy: {:.2f}%".format(val_loss, val_acc * 100.))
+            print("_init_search: Loaded the checkpoint with: \nVal loss: {:.4f}, Val accuracy: {:.2f}%".format(val_loss, val_acc * 100.))
             
         self.root = Node(0, available_batch_idxs=np.arange(sampler.num_batches))
         torch.save(self._base_model.state_dict(), self.root.path)
@@ -127,12 +135,13 @@ class MCTS:
 
         return val_loss, val_acc
 
-    def best_branch(self, node):
+    def best_branch_by_uct(self, node):
         best = deepcopy(node)
         batch_idxs = []
         last_node = best
 
         def _best_branch(node):
+            nonlocal last_node
             if len(node.children) == 0:
                 return
 
@@ -146,6 +155,29 @@ class MCTS:
         _best_branch(best)
 
         return best, batch_idxs, last_node
+
+    def best_branch_by_visit(self, node):
+        best = deepcopy(node)
+        batch_idxs = []
+        last_node = best
+    
+        def _best_branch(node):
+            nonlocal last_node
+            if len(node.children) == 0:
+                return
+    
+            # Válaszd ki a leglátogatottabb gyermeket
+            best_child = max(node.children, key=lambda child: child.n)
+            node.children = [best_child]
+            batch_idxs.append(best_child.batch_idx)
+            last_node = best_child
+    
+            return _best_branch(best_child)
+    
+        _best_branch(best)
+    
+        return best, batch_idxs, last_node
+        
 
     def best_branch_visualisation(self, node):
 
