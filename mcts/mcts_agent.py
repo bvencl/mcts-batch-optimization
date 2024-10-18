@@ -30,8 +30,12 @@ class MCTS:
         self._init_search(model, sampler, model_checkpoint, val_loader, criterion, epoch)
         if self.config.mcts.increasing_exploit_multiplier:    
             score_multiplier = self.config.mcts.min_exploit_multiplier if epoch <= self.config.mcts.exploit_multiplier_kick_in else min(self.config.mcts.exploit_multiplier_steps * epoch, self.config.mcts.max_exploit_multiplier)
+            if self.config.mcts.increment_verbose:
+                print(f"Setting exploit multiplier to {score_multiplier}")
         else:
             score_multiplier = self.config.mcts.default_exploit_multiplier
+        if neptune_namespace is not None:
+            neptune_namespace["metrics/exploit_multiplier"].append(score_multiplier)
         for i in range(self.n_iters):
             print("Iteration #{0}".format(i))
 
