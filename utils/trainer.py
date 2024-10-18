@@ -117,7 +117,7 @@ class Trainer:
                 f"Val accuracy: {val_accuracy[-1]:.2f}%")
 
             if self.model_checkpoint:
-                self.checkpoint(val_loss[-1], val_accuracy[-1]/100.0, self.model, self.neptune_namespace)
+                self.checkpoint(val_loss[-1], val_accuracy[-1], self.model, self.neptune_namespace)
 
             if self.neptune_logger and self.config.agent.lr_decay:
                 self.neptune_namespace["metrics/lr"].append(float(self.lr_scheduler.get_lr()[-1]))
@@ -194,9 +194,11 @@ class Trainer:
                 if self.config.agent.lr_decay:
                     print(f'Setting learning rate to {self.lr_scheduler.get_lr()[-1]}')
                 else:
-                    print(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")                    
-                root = self.mcts.search(self.model, self.val_loader, self.criterion, self.optimizer, self.sampler, epoch, self.checkpoint, neptune_namespace = self.neptune_namespace, visualise=False)
-
+                    print(f"Learning rate: {self.optimizer.param_groups[0]['lr']}")
+                try:                        
+                    root = self.mcts.search(self.model, self.val_loader, self.criterion, self.optimizer, self.sampler, epoch, self.checkpoint, neptune_namespace = self.neptune_namespace, visualise=False)
+                except:
+                    print("Searching was interrputed")
                 best_branch_, batch_sequence_idxs, last_node = self.mcts.best_branch_by_visit(root)
                 self.model.load_state_dict(torch.load(last_node.path, weights_only=True))               
                 print(batch_sequence_idxs)
@@ -204,7 +206,7 @@ class Trainer:
                 if self.checkpoint:
                     self.checkpoint(val_loss, val_acc * 100, self.model, self.neptune_namespace)
                 if self.neptune_logger:
-                    self.neptune_namespace["metrics/val_acc"].append(copy.deepcopy(val_acc))
+                    self.neptune_namespace["metrics/val_acc"].append(val_acc * 100.0)
                     self.neptune_namespace["metrics/val_loss"].append(val_loss)
                     if self.config.agent.lr_decay:
                         self.neptune_namespace["metrics/lr"].append(self.optimizer.param_groups[0]['lr'])
