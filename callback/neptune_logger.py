@@ -50,6 +50,7 @@ class CustomNeptuneLogger(NeptuneLogger):
                 add_param("lr_end", self._config.agent.lr_end)                
         
         if self._config.data_loader.custom_sampler:
+            add_param("method", "MCTS")
             add_param("branching_mode", self._config.mcts.branching_mode)
             add_param("branching_factor", self._config.mcts.branching_factor)
             add_param("c_param", self._config.mcts.c_param)

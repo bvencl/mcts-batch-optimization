@@ -44,7 +44,7 @@ class MCTS:
             val_loss , val_acc = self.rollout(v, sampler, val_loader, criterion, optimizer)
             
             if self.config.mcts.checkpoint_loading:
-                self.checkpoint(val_loss=val_loss, val_acc=val_acc, model=self._base_model, neptune_namespace=neptune_namespace)
+                self.checkpoint(val_loss=val_loss, val_acc=val_acc * 100, model=self._base_model, neptune_namespace=neptune_namespace)
             
             if self.is_terminal_node(v) and self.checkpoint is not None:
                 self.checkpoint(val_loss, val_acc, self._base_model, neptune_namespace)
