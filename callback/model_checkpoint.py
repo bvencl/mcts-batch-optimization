@@ -35,4 +35,4 @@ class ModelCheckpoint:
 
         if self.neptune_logger is not None:
             neptune_namespace["metrics/checkpoint_loss"].append(val_loss)
-            neptune_namespace["metrics/checkpoint_accuracy"].append(val_acc)
+            neptune_namespace["metrics/checkpoint_accuracy"].append(val_acc * 100)

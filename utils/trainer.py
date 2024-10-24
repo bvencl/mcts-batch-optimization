@@ -117,7 +117,7 @@ class Trainer:
                 f"Val accuracy: {val_accuracy[-1]:.2f}%")
 
             if self.model_checkpoint:
-                self.checkpoint(val_loss[-1], val_accuracy[-1], self.model, self.neptune_namespace)
+                self.checkpoint(val_loss[-1], val_accuracy[-1]/100, self.model, self.neptune_namespace)
 
             if self.neptune_logger and self.config.agent.lr_decay:
                 self.neptune_namespace["metrics/lr"].append(float(self.lr_scheduler.get_lr()[-1]))
@@ -204,7 +204,7 @@ class Trainer:
                 print(batch_sequence_idxs)
                 val_loss, val_acc = validate_model(model=self.model, data_loader=self.val_loader, criterion=self.criterion)
                 if self.checkpoint:
-                    self.checkpoint(val_loss, val_acc * 100, self.model, self.neptune_namespace)
+                    self.checkpoint(val_loss, val_acc, self.model, self.neptune_namespace)
                 if self.neptune_logger:
                     self.neptune_namespace["metrics/val_acc"].append(val_acc * 100.0)
                     self.neptune_namespace["metrics/val_loss"].append(val_loss)

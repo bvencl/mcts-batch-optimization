@@ -41,8 +41,8 @@ class AgentFactory(BaseFactory):
                                                        T_max=T_max,
                                                        warmup_epochs=config.agent.warmup_epochs,
                                                        eta_min=config.agent.lr_end, # végén ide tart
-                                                       eta_max=config.agent.lr_warmup_end,
-                                                       verbose=config.agent.lr_verbose) # ide megy fel warmup végén
+                                                       eta_max=config.agent.lr_warmup_end,# ide megy fel warmup végén
+                                                       verbose=config.agent.lr_verbose) 
             elif decay_strategy == "lin":
                 lr_scheduler = optim.lr_scheduler.LinearLR(optimizer=optimizer, verbose=config.agent.lr_verbose)
             elif decay_strategy == "exp":

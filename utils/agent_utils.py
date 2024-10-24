@@ -136,16 +136,15 @@ def focal_loss(alpha: Optional[Sequence] = None,
 class WarmupCosineAnnealingLR(CosineAnnealingLR):
     def __init__(self, optimizer, T_max, warmup_epochs, eta_min, eta_max, last_epoch=-1, verbose=True):
         self.warmup_epochs = warmup_epochs
-        self.max_lr = eta_max
+        self.eta_max = eta_max
         super(WarmupCosineAnnealingLR, self).__init__(optimizer, T_max, eta_min, last_epoch, verbose)
 
     def get_lr(self):
         if self.last_epoch <= self.warmup_epochs:
             warmup_stage = self.last_epoch / self.warmup_epochs
-            lrs = [base_lr + (self.max_lr - base_lr) * warmup_stage for base_lr in self.base_lrs]
-
+            lrs = [base_lr + (self.eta_max - base_lr) * warmup_stage for base_lr in self.base_lrs]
         else:
-            mid_stage = (self.last_epoch - self.warmup_epochs) / self.T_max
-            lrs = [base_lr + (self.max_lr - base_lr) * (1 + np.cos(np.pi * mid_stage)) / 2 for base_lr in self.base_lrs]
+            mid_stage = (self.last_epoch - self.warmup_epochs) / (self.T_max)# - self.warmup_epochs)
+            lrs = [self.eta_min + (self.eta_max - self.eta_min) * (1 + np.cos(np.pi * mid_stage)) / 2 for base_lr in self.base_lrs]
 
         return lrs
